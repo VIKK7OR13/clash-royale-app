@@ -16,6 +16,25 @@ class PlayerController extends Controller
         return str_replace('O', '0', $tag);
     }
 
+    private function batallas(string $tag): array
+    {
+        $batallas = Cache::get("batallas_{$tag}");
+
+        if ($batallas === null) {
+            $response = Http::withToken(config('services.clash_royale.key'))
+                ->get('https://api.clashroyale.com/v1/players/' . urlencode('#' . $tag) . '/battlelog');
+
+            if (! $response->successful()) {
+                return [];
+            }
+
+            $batallas = array_slice($response->json(), 0, 10);
+            Cache::put("batallas_{$tag}", $batallas, now()->addMinutes(2));
+        }
+
+        return $batallas;
+    }
+
     public function search(Request $request)
     {
         if ($request->filled('tag')) {
@@ -53,6 +72,9 @@ class PlayerController extends Controller
             Cache::put("player_{$tag}", $player, now()->addMinutes(5));
         }
 
-        return view('player', ['player' => $player]);
+        return view('player', [
+            'player' => $player,
+            'batallas' => $this->batallas($tag),
+        ]);
     }
 }
