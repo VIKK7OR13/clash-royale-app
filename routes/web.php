@@ -7,4 +7,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/clash', [PlayerController::class, 'show']);
+Route::get('/clash', [PlayerController::class, 'search']);
+Route::get('/jugador/{tag}', [PlayerController::class, 'show']);
