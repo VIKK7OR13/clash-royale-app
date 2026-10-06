@@ -1,72 +1,61 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $clan['name'] }} | VIK13 Seguimiento de clan</title>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: #1e1e24; color: #f2f2f2; }
-        .contenedor { max-width: 960px; margin: 40px auto; padding: 0 20px; }
-        h1 { color: #e63946; }
-        h2 { margin-top: 40px; }
-        a { color: #e63946; }
-        .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 24px; }
-        .tarjeta { background: #2a2a32; border-left: 4px solid #e63946; border-radius: 8px; padding: 16px; }
-        .tarjeta span { display: block; font-size: 0.85rem; color: #aaa; }
-        .tarjeta strong { font-size: 1.5rem; }
-        .tabla-wrap { overflow-x: auto; margin-top: 16px; }
-        table { width: 100%; border-collapse: collapse; background: #2a2a32; border-radius: 8px; }
-        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #3a3a44; white-space: nowrap; }
-        th { color: #aaa; font-size: 0.85rem; font-weight: normal; }
-        .punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; background: #888; }
-        .verde { background: #2a9d8f; }
-        .amarillo { background: #e9c46a; }
-        .rojo { background: #e63946; }
-        .nota { background: #2a2a32; padding: 12px 16px; border-radius: 8px; margin-top: 16px; color: #ccc; }
-        small.aviso { display: block; margin-top: 40px; color: #888; }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
+
+@section('titulo', $clan['name'] . ' | VIK13 Seguimiento de clan')
+
+@section('contenido')
     @php
         $roles = ['leader' => 'Líder', 'coLeader' => 'Colíder', 'elder' => 'Veterano', 'member' => 'Miembro'];
+        $colores = ['rojo' => 'bg-acento', 'amarillo' => 'bg-aviso', 'verde' => 'bg-ok', '' => 'bg-gray-500'];
+
         $inactivos = $miembros->filter(fn ($m) => ($m['dias'] ?? 0) >= 7)->count();
         $sinMazos = $miembros->filter(fn ($m) => $m['mazos_semana'] === 0)->count();
+
+        $resumen = [
+            ['Miembros', count($miembros)],
+            ['Puntaje del clan', number_format($clan['clanScore'] ?? 0, 0, ',', '.')],
+            ['Inactivos (7+ días)', $inactivos],
+        ];
+
+        $columnas = ['Jugador', 'Rol', 'Última conexión', 'Trofeos', 'Donaciones'];
+
+        if ($hayDatosGuerra) {
+            $resumen[] = ['Sin mazos en la guerra', $sinMazos];
+            $columnas[] = 'Mazos (semana)';
+            $columnas[] = 'Mazos (hoy)';
+        }
     @endphp
 
-    <div class="contenedor">
-        <p><a href="/clan">&larr; Buscar otro clan</a></p>
-        <h1>{{ $clan['name'] }}</h1>
-        <p>{{ $clan['tag'] }} · {{ $clan['description'] ?? '' }}</p>
+    <main class="mx-auto my-10 max-w-[960px] px-5">
+        <a href="/clan" class="text-acento hover:underline">&larr; Buscar otro clan</a>
 
-        <div class="tarjetas">
-            <div class="tarjeta"><span>Miembros</span><strong>{{ count($miembros) }}</strong></div>
-            <div class="tarjeta"><span>Puntaje del clan</span><strong>{{ number_format($clan['clanScore'] ?? 0, 0, ',', '.') }}</strong></div>
-            <div class="tarjeta"><span>Inactivos (7+ días)</span><strong>{{ $inactivos }}</strong></div>
-            @if ($hayDatosGuerra)
-                <div class="tarjeta"><span>Sin mazos en la guerra</span><strong>{{ $sinMazos }}</strong></div>
-            @endif
+        <h1 class="mt-4 text-3xl font-bold text-acento">{{ $clan['name'] }}</h1>
+        <p class="mt-2">{{ $clan['tag'] }} · {{ $clan['description'] ?? '' }}</p>
+
+        <div class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+            @foreach ($resumen as [$etiqueta, $valor])
+                <div class="rounded-lg border-l-4 border-acento bg-tarjeta p-4">
+                    <span class="block text-sm text-suave">{{ $etiqueta }}</span>
+                    <strong class="text-2xl">{{ $valor }}</strong>
+                </div>
+            @endforeach
         </div>
 
         @unless ($hayDatosGuerra)
-            <div class="nota">No hay datos de la guerra de clanes en este momento, así que se muestra solo la última conexión.</div>
+            <div class="mt-4 rounded-lg bg-tarjeta px-4 py-3 text-gray-300">
+                No hay datos de la guerra de clanes en este momento, así que se muestra solo la última conexión.
+            </div>
         @endunless
 
-        <h2>Actividad de los miembros</h2>
-        <p style="color:#aaa; margin-top: 0;">Ordenados del más inactivo al más activo.</p>
+        <h2 class="mt-10 text-2xl font-bold">Actividad de los miembros</h2>
+        <p class="mt-1 text-suave">Ordenados del más inactivo al más activo.</p>
 
-        <div class="tabla-wrap">
-            <table>
+        <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse rounded-lg bg-tarjeta">
                 <thead>
-                    <tr>
-                        <th>Jugador</th>
-                        <th>Rol</th>
-                        <th>Última conexión</th>
-                        <th>Trofeos</th>
-                        <th>Donaciones</th>
-                        @if ($hayDatosGuerra)
-                            <th>Mazos (semana)</th>
-                            <th>Mazos (hoy)</th>
-                        @endif
+                    <tr class="text-left text-sm text-suave">
+                        @foreach ($columnas as $columna)
+                            <th class="whitespace-nowrap px-3 py-2.5 font-normal">{{ $columna }}</th>
+                        @endforeach
                     </tr>
                 </thead>
                 <tbody>
@@ -75,23 +64,22 @@
                             $d = $m['dias'];
                             $estado = $d === null ? '' : ($d >= 7 ? 'rojo' : ($d >= 3 ? 'amarillo' : 'verde'));
                         @endphp
-                        <tr>
-                            <td><span class="punto {{ $estado }}"></span>{{ $m['name'] }}</td>
-                            <td>{{ $roles[$m['role']] ?? $m['role'] }}</td>
-                            <td>{{ $m['ultima'] ? $m['ultima']->locale('es')->diffForHumans() : '-' }}</td>
-                            <td>{{ number_format($m['trophies'], 0, ',', '.') }}</td>
-                            <td>{{ $m['donations'] }}</td>
+                        <tr class="border-t border-borde">
+                            <td class="whitespace-nowrap px-3 py-2.5">
+                                <span class="mr-2 inline-block size-2.5 rounded-full {{ $colores[$estado] }}"></span>{{ $m['name'] }}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-2.5">{{ $roles[$m['role']] ?? $m['role'] }}</td>
+                            <td class="whitespace-nowrap px-3 py-2.5">{{ $m['ultima'] ? $m['ultima']->locale('es')->diffForHumans() : '-' }}</td>
+                            <td class="whitespace-nowrap px-3 py-2.5">{{ number_format($m['trophies'], 0, ',', '.') }}</td>
+                            <td class="whitespace-nowrap px-3 py-2.5">{{ $m['donations'] }}</td>
                             @if ($hayDatosGuerra)
-                                <td>{{ $m['mazos_semana'] }}</td>
-                                <td>{{ $m['mazos_hoy'] }}</td>
+                                <td class="whitespace-nowrap px-3 py-2.5">{{ $m['mazos_semana'] }}</td>
+                                <td class="whitespace-nowrap px-3 py-2.5">{{ $m['mazos_hoy'] }}</td>
                             @endif
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
-
-        <small class="aviso">Contenido no oficial. Este sitio no está afiliado, respaldado ni patrocinado por Supercell.</small>
-    </div>
-</body>
-</html>
+    </main>
+@endsection

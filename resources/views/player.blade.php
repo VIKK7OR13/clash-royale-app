@@ -1,73 +1,68 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $player['name'] }} | VIK13 Clash Royale</title>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: #1e1e24; color: #f2f2f2; }
-        .contenedor { max-width: 800px; margin: 40px auto; padding: 0 20px; }
-        h1 { color: #e63946; }
-        h2 { margin-top: 40px; }
-        a { color: #e63946; }
-        .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 24px; }
-        .tarjeta { background: #2a2a32; border-left: 4px solid #e63946; border-radius: 8px; padding: 16px; }
-        .tarjeta span { display: block; font-size: 0.85rem; color: #aaa; }
-        .tarjeta strong { font-size: 1.5rem; }
-        .mazo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
-        .carta { background: #2a2a32; border-radius: 8px; padding: 8px; text-align: center; }
-        .carta img { width: 100%; height: auto; }
-        .carta p { margin: 4px 0 0; font-size: 0.8rem; }
-        .elixir { color: #c77dff; font-weight: bold; }
-        .batallas { display: grid; gap: 10px; margin-top: 16px; }
-        .batalla { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; background: #2a2a32; border-left: 4px solid #888; border-radius: 8px; padding: 12px 16px; }
-        .batalla.victoria { border-left-color: #2a9d8f; }
-        .batalla.derrota { border-left-color: #e63946; }
-        .batalla .detalle { color: #aaa; font-size: 0.85rem; }
-        small.aviso { display: block; margin-top: 40px; color: #888; }
-        @media (max-width: 500px) { .mazo { grid-template-columns: repeat(2, 1fr); } }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
+
+@section('titulo', $player['name'] . ' | VIK13 Clash Royale')
+
+@section('contenido')
     @php
         $mazo = $player['currentDeck'] ?? [];
         $promedio = count($mazo) ? number_format(collect($mazo)->avg('elixirCost'), 1, ',', '.') : null;
+
+        $estadisticas = [
+            ['Trofeos', number_format($player['trophies'], 0, ',', '.')],
+            ['Mejores trofeos', number_format($player['bestTrophies'], 0, ',', '.')],
+            ['Nivel', $player['expLevel']],
+            ['Victorias', number_format($player['wins'], 0, ',', '.')],
+            ['Partidas jugadas', number_format($player['battleCount'], 0, ',', '.')],
+            ['Victorias con 3 coronas', number_format($player['threeCrownWins'], 0, ',', '.')],
+        ];
+
+        $bordes = [
+            'victoria' => 'border-ok',
+            'derrota' => 'border-acento',
+            'empate' => 'border-gray-500',
+        ];
     @endphp
 
-    <div class="contenedor">
-        <p><a href="/clash">&larr; Buscar otro jugador</a></p>
-        <h1>{{ $player['name'] }}</h1>
-        <p>
+    <main class="mx-auto my-10 max-w-[800px] px-5">
+        <a href="/clash" class="text-acento hover:underline">&larr; Buscar otro jugador</a>
+
+        <h1 class="mt-4 text-3xl font-bold text-acento">{{ $player['name'] }}</h1>
+        <p class="mt-2">
             {{ $player['tag'] }}
             · Clan: {{ $player['clan']['name'] ?? 'Sin clan' }}
             · Arena: {{ $player['arena']['name'] ?? '-' }}
         </p>
 
-        <div class="tarjetas">
-            <div class="tarjeta"><span>Trofeos</span><strong>{{ number_format($player['trophies'], 0, ',', '.') }}</strong></div>
-            <div class="tarjeta"><span>Mejores trofeos</span><strong>{{ number_format($player['bestTrophies'], 0, ',', '.') }}</strong></div>
-            <div class="tarjeta"><span>Nivel</span><strong>{{ $player['expLevel'] }}</strong></div>
-            <div class="tarjeta"><span>Victorias</span><strong>{{ number_format($player['wins'], 0, ',', '.') }}</strong></div>
-            <div class="tarjeta"><span>Partidas jugadas</span><strong>{{ number_format($player['battleCount'], 0, ',', '.') }}</strong></div>
-            <div class="tarjeta"><span>Victorias con 3 coronas</span><strong>{{ number_format($player['threeCrownWins'], 0, ',', '.') }}</strong></div>
+        <div class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+            @foreach ($estadisticas as [$etiqueta, $valor])
+                <div class="rounded-lg border-l-4 border-acento bg-tarjeta p-4">
+                    <span class="block text-sm text-suave">{{ $etiqueta }}</span>
+                    <strong class="text-2xl">{{ $valor }}</strong>
+                </div>
+            @endforeach
         </div>
 
         @if (count($mazo))
-            <h2>Mazo actual @if ($promedio) <span class="elixir">· {{ $promedio }} de elixir promedio</span> @endif</h2>
-            <div class="mazo">
+            <h2 class="mt-10 text-2xl font-bold">
+                Mazo actual
+                @if ($promedio)
+                    <span class="font-bold text-elixir">· {{ $promedio }} de elixir promedio</span>
+                @endif
+            </h2>
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 @foreach ($mazo as $carta)
-                    <div class="carta">
-                        <img src="{{ $carta['iconUrls']['medium'] ?? '' }}" alt="{{ $carta['name'] }}">
-                        <p>{{ $carta['name'] }}</p>
-                        <p class="elixir">{{ $carta['elixirCost'] ?? '-' }} ⚡</p>
+                    <div class="rounded-lg bg-tarjeta p-2 text-center">
+                        <img src="{{ $carta['iconUrls']['medium'] ?? '' }}" alt="{{ $carta['name'] }}" class="h-auto w-full">
+                        <p class="mt-1 text-xs">{{ $carta['name'] }}</p>
+                        <p class="mt-1 text-xs font-bold text-elixir">{{ $carta['elixirCost'] ?? '-' }} ⚡</p>
                     </div>
                 @endforeach
             </div>
         @endif
 
         @if (count($batallas))
-            <h2>Últimas partidas</h2>
-            <div class="batallas">
+            <h2 class="mt-10 text-2xl font-bold">Últimas partidas</h2>
+            <div class="mt-4 grid gap-2.5">
                 @foreach ($batallas as $b)
                     @php
                         $mias = $b['team'][0]['crowns'] ?? 0;
@@ -76,12 +71,12 @@
                         $hace = \Carbon\Carbon::createFromFormat('Ymd\THis.v\Z', $b['battleTime'], 'UTC')->locale('es')->diffForHumans();
                         $cambio = $b['team'][0]['trophyChange'] ?? null;
                     @endphp
-                    <div class="batalla {{ $resultado }}">
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border-l-4 bg-tarjeta px-4 py-3 {{ $bordes[$resultado] }}">
                         <div>
                             <strong>{{ ucfirst($resultado) }}</strong>
                             · {{ $mias }} - {{ $rival }} vs {{ $b['opponent'][0]['name'] ?? '?' }}
                         </div>
-                        <div class="detalle">
+                        <div class="text-sm text-suave">
                             {{ $b['gameMode']['name'] ?? $b['type'] }}
                             @if ($cambio !== null) · {{ $cambio > 0 ? '+' : '' }}{{ $cambio }} 🏆 @endif
                             · {{ $hace }}
@@ -90,8 +85,5 @@
                 @endforeach
             </div>
         @endif
-
-        <small class="aviso">Contenido no oficial. Este sitio no está afiliado, respaldado ni patrocinado por Supercell.</small>
-    </div>
-</body>
-</html>
+    </main>
+@endsection
