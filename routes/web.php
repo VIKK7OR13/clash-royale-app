@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClanController;
+use App\Http\Controllers\CompareController;
 use App\Http\Controllers\PlayerController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,3 +14,5 @@ Route::get('/jugador/{tag}', [PlayerController::class, 'show']);
 
 Route::get('/clan', [ClanController::class, 'search']);
 Route::get('/clan/{tag}', [ClanController::class, 'show']);
+
+Route::get('/comparar', [CompareController::class, 'index']);
