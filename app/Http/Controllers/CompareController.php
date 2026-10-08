@@ -2,31 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ClashRoyale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 class CompareController extends Controller
 {
-    private function limpiarTag(string $tag): string
-    {
-        $tag = strtoupper(trim($tag));
-        $tag = ltrim($tag, '#');
-
-        return str_replace('O', '0', $tag);
-    }
-
     private function jugador(string $tag): array
     {
-        if (! preg_match('/^[0289PYLQGRJCUV]{3,15}$/', $tag)) {
+        if (! ClashRoyale::tagValido($tag)) {
             return ['error' => "El tag #{$tag} no es válido."];
         }
 
         $player = Cache::get("player_{$tag}");
 
         if (! $player) {
-            $response = Http::withToken(config('services.clash_royale.key'))
-                ->get('https://api.clashroyale.com/v1/players/' . urlencode('#' . $tag));
+            $response = ClashRoyale::get('/players/' . urlencode('#' . $tag));
 
             if (! $response->successful()) {
                 $reason = $response->json('reason');
@@ -68,8 +59,8 @@ class CompareController extends Controller
             return view('compare');
         }
 
-        $tag1 = $this->limpiarTag($request->input('tag1'));
-        $tag2 = $this->limpiarTag($request->input('tag2'));
+        $tag1 = ClashRoyale::limpiarTag($request->input('tag1'));
+        $tag2 = ClashRoyale::limpiarTag($request->input('tag2'));
 
         $a = $this->jugador($tag1);
         $b = $this->jugador($tag2);

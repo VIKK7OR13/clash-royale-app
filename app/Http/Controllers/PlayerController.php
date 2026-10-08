@@ -2,27 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ClashRoyale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 class PlayerController extends Controller
 {
-    private function limpiarTag(string $tag): string
-    {
-        $tag = strtoupper(trim($tag));
-        $tag = ltrim($tag, '#');
-
-        return str_replace('O', '0', $tag);
-    }
-
     private function batallas(string $tag): array
     {
         $batallas = Cache::get("batallas_{$tag}");
 
         if ($batallas === null) {
-            $response = Http::withToken(config('services.clash_royale.key'))
-                ->get('https://api.clashroyale.com/v1/players/' . urlencode('#' . $tag) . '/battlelog');
+            $response = ClashRoyale::get('/players/' . urlencode('#' . $tag) . '/battlelog');
 
             if (! $response->successful()) {
                 return [];
@@ -38,7 +29,7 @@ class PlayerController extends Controller
     public function search(Request $request)
     {
         if ($request->filled('tag')) {
-            return redirect('/jugador/' . $this->limpiarTag($request->input('tag')));
+            return redirect('/jugador/' . ClashRoyale::limpiarTag($request->input('tag')));
         }
 
         return view('search');
@@ -46,17 +37,16 @@ class PlayerController extends Controller
 
     public function show(string $tag)
     {
-        $tag = $this->limpiarTag($tag);
+        $tag = ClashRoyale::limpiarTag($tag);
 
-        if (! preg_match('/^[0289PYLQGRJCUV]{3,15}$/', $tag)) {
+        if (! ClashRoyale::tagValido($tag)) {
             return view('search', ['error' => 'El tag no es válido. Revisá que esté bien escrito.']);
         }
 
         $player = Cache::get("player_{$tag}");
 
         if (! $player) {
-            $response = Http::withToken(config('services.clash_royale.key'))
-                ->get('https://api.clashroyale.com/v1/players/' . urlencode('#' . $tag));
+            $response = ClashRoyale::get('/players/' . urlencode('#' . $tag));
 
             if (! $response->successful()) {
                 $reason = $response->json('reason') ?? 'No se pudo conectar con la API';

@@ -2,31 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ClashRoyale;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 class ClanController extends Controller
 {
-    private function limpiarTag(string $tag): string
-    {
-        $tag = strtoupper(trim($tag));
-        $tag = ltrim($tag, '#');
-
-        return str_replace('O', '0', $tag);
-    }
-
-    private function pedir(string $ruta)
-    {
-        return Http::withToken(config('services.clash_royale.key'))
-            ->get('https://api.clashroyale.com/v1' . $ruta);
-    }
-
     public function search(Request $request)
     {
         if ($request->filled('tag')) {
-            return redirect('/clan/' . $this->limpiarTag($request->input('tag')));
+            return redirect('/clan/' . ClashRoyale::limpiarTag($request->input('tag')));
         }
 
         return view('clan-search');
@@ -34,16 +20,16 @@ class ClanController extends Controller
 
     public function show(string $tag)
     {
-        $tag = $this->limpiarTag($tag);
+        $tag = ClashRoyale::limpiarTag($tag);
 
-        if (! preg_match('/^[0289PYLQGRJCUV]{3,15}$/', $tag)) {
+        if (! ClashRoyale::tagValido($tag)) {
             return view('clan-search', ['error' => 'El tag no es válido. Revisá que esté bien escrito.']);
         }
 
         $clan = Cache::get("clan_{$tag}");
 
         if (! $clan) {
-            $response = $this->pedir('/clans/' . urlencode('#' . $tag));
+            $response = ClashRoyale::get('/clans/' . urlencode('#' . $tag));
 
             if (! $response->successful()) {
                 $reason = $response->json('reason') ?? 'No se pudo conectar con la API';
@@ -62,7 +48,7 @@ class ClanController extends Controller
         $guerra = Cache::get("guerra_{$tag}");
 
         if ($guerra === null) {
-            $response = $this->pedir('/clans/' . urlencode('#' . $tag) . '/currentriverrace');
+            $response = ClashRoyale::get('/clans/' . urlencode('#' . $tag) . '/currentriverrace');
             $guerra = $response->successful() ? $response->json() : [];
 
             if ($response->successful()) {

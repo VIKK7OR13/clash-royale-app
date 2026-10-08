@@ -34,7 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    'clash_royale' => [
+        'clash_royale' => [
         'key' => env('CLASH_ROYALE_API_KEY'),
+        'base_url' => env('CLASH_ROYALE_BASE_URL', 'https://api.clashroyale.com/v1'),
     ],
 ];
